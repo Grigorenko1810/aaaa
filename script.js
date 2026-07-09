@@ -5049,7 +5049,8 @@ function getProjectsFromTechBlockForCenter(centerKey, options = {}) {
                 planHours: 0,
                 actualHours: 0,
                 factStart: null,
-                factEnd: null
+                factEnd: null,
+                hasComment: false
             });
         }
 
@@ -5062,6 +5063,7 @@ function getProjectsFromTechBlockForCenter(centerKey, options = {}) {
         if (center) project.centers.add(center);
         if (management) project.managements.add(management);
         if (!project.type && projectType) project.type = projectType;
+        if (getCleanTextValue(getRowValue(row, ['Комментарий']))) project.hasComment = true;
         project.statuses.push(status);
         project.planDate = getLaterDate(project.planDate, parseDateValue(getRowValue(row, [
             'План дата завершения этапа по графику проекта',
@@ -5118,10 +5120,13 @@ function getProjectsFromTechBlockForCenter(centerKey, options = {}) {
             factEnd: project.factEnd,
             dateIndicator: getProjectTableDateIndicator(project.planDate, project.estimateDate),
             dateColor: getProjectTableDateColor(project.planDate, project.estimateDate),
+            doneDateIndicator: getProjectTableDateIndicator(project.planDate, project.factEnd),
+            doneDateColor: getProjectTableDateColor(project.planDate, project.factEnd),
             planHours: project.planHours,
             actualHours: project.actualHours,
             remainingHours,
-            hoursColor: getProjectTableHoursColor(remainingHours)
+            hoursColor: getProjectTableHoursColor(remainingHours),
+            hasComment: project.hasComment === true
         };
     }).filter(project => PROJECT_TABLE_ALLOWED_STATUSES.has(project.status)).sort((a, b) => {
         if (includeAllCenters) {
@@ -5279,7 +5284,8 @@ function aggregateProjectDetailRowsByTask(projects) {
                 factStart: project.factStart || null,
                 factEnd: project.factEnd || null,
                 planHours: 0,
-                actualHours: 0
+                actualHours: 0,
+                hasComment: false
             });
         }
 
@@ -5289,6 +5295,7 @@ function aggregateProjectDetailRowsByTask(projects) {
         if (!current.type && project.type) current.type = project.type;
         if (!current.status && project.status) current.status = project.status;
         if (!current.statusType && project.statusType) current.statusType = project.statusType;
+        if (project.hasComment) current.hasComment = true;
 
         (Array.isArray(project.centers) ? project.centers : [project.center]).filter(Boolean).forEach(center => current.centers.add(center));
         (Array.isArray(project.managements) ? project.managements : [project.management]).filter(Boolean).forEach(management => current.managements.add(management));
@@ -5327,10 +5334,13 @@ function aggregateProjectDetailRowsByTask(projects) {
             factEnd: project.factEnd,
             dateIndicator: getProjectTableDateIndicator(project.planDate, project.estimateDate),
             dateColor: getProjectTableDateColor(project.planDate, project.estimateDate),
+            doneDateIndicator: getProjectTableDateIndicator(project.planDate, project.factEnd),
+            doneDateColor: getProjectTableDateColor(project.planDate, project.factEnd),
             planHours: project.planHours,
             actualHours: project.actualHours,
             remainingHours,
-            hoursColor: getProjectTableHoursColor(remainingHours)
+            hoursColor: getProjectTableHoursColor(remainingHours),
+            hasComment: project.hasComment === true
         };
     }).sort((a, b) => String(a.id).localeCompare(String(b.id), 'ru', { numeric: true }));
 }
@@ -5360,6 +5370,9 @@ function filterProjectTableByOverdue(projects, filter) {
 
 function isProjectTableDateOverdue(project) {
     if (!project) return false;
+    if (project.statusType === 'done') {
+        return project.doneDateColor === INDICATOR_COLORS.RED;
+    }
     if (getProjectTableFactEndDelayDays(project) > 0) return true;
     return project.dateColor === INDICATOR_COLORS.RED;
 }
@@ -5493,7 +5506,7 @@ function renderProjectDetails(projects, status, type) {
             <div class="management-group">
                 ${groupTitle ? `<div class="management-title">${escapeHtml(groupTitle)}</div>` : ''}
                 
-                <div class="projects-grid-header ${showDateIndicatorColumn || isDoneStatus ? '' : 'projects-grid-header--no-date-indicator'}${showContextColumn ? ' projects-grid-header--with-management' : ''}">
+                <div class="projects-grid-header ${showDateIndicatorColumn || isDoneStatus ? '' : 'projects-grid-header--no-date-indicator'}${isDoneStatus ? ' projects-grid-header--done-with-indicator' : ''}${showContextColumn ? ' projects-grid-header--with-management' : ''}">
                     ${showContextColumn ? `<div class="grid-cell grid-header">${showCenterColumn ? 'Центр' : 'Управление'}</div>` : ''}
                     <div class="grid-cell grid-header">ID</div>
                     <div class="grid-cell grid-header">Название</div>
@@ -5502,6 +5515,7 @@ function renderProjectDetails(projects, status, type) {
                             <div class="grid-cell grid-header">Факт начало</div>
                             <div class="grid-cell grid-header">Факт окончание</div>
                             <div class="grid-cell grid-header">План дата завершения этапа по графику проекта</div>
+                            <div class="grid-cell grid-header">Индикатор по дате</div>
                         `
                         : `
                             <div class="grid-cell grid-header">План дата завершения этапа по графику проекта</div>
@@ -5566,17 +5580,25 @@ function renderProjectDetails(projects, status, type) {
             const dateIndicatorHtml = hasBothProjectDates
                 ? `<span class="project-value-badge project-value-badge--${escapeHtml(getProjectTableBadgeTone(project.dateColor))}">${escapeHtml(project.dateIndicator) || '-'}</span>`
                 : '-';
+            const hasBothDoneDates = Boolean(planDate && factEnd);
+            const doneDateIndicatorHtml = hasBothDoneDates
+                ? `<span class="project-value-badge project-value-badge--${escapeHtml(getProjectTableBadgeTone(project.doneDateColor))}">${escapeHtml(project.doneDateIndicator) || '-'}</span>`
+                : '-';
+            const commentFlagHtml = project.hasComment
+                ? '<span class="project-comment-flag" title="Есть комментарий в Проекты_ТехБлок" aria-hidden="true">!</span>'
+                : '';
             
             html += `
-                <div class="projects-grid-row ${showDateIndicatorColumn || isDoneStatus ? '' : 'projects-grid-row--no-date-indicator'}${showContextColumn ? ' projects-grid-row--with-management' : ''}">
+                <div class="projects-grid-row ${showDateIndicatorColumn || isDoneStatus ? '' : 'projects-grid-row--no-date-indicator'}${isDoneStatus ? ' projects-grid-row--done-with-indicator' : ''}${showContextColumn ? ' projects-grid-row--with-management' : ''}">
                     ${showContextColumn ? `<div class="grid-cell project-management" title="${showCenterColumn ? safeCenterLabel : safeManagement}">${showCenterColumn ? safeCenterLabel : safeManagement}</div>` : ''}
-                    <div class="grid-cell project-id">${escapeHtml(project.id) || '—'}</div>
+                    <div class="grid-cell project-id"><span class="project-id-value">${escapeHtml(project.id) || '—'}</span>${commentFlagHtml}</div>
                     <div class="grid-cell project-name">${safeProjectName}</div>
                     ${isDoneStatus
                         ? `
                             <div class="grid-cell project-date">${safeFactStart}</div>
                             <div class="grid-cell project-date">${factEndHtml}</div>
                             <div class="grid-cell project-date">${safePlanDate}</div>
+                            <div class="grid-cell project-indicator-cell">${doneDateIndicatorHtml}</div>
                         `
                         : `
                             <div class="grid-cell project-date">${safePlanDate}</div>

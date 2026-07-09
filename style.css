@@ -1463,6 +1463,27 @@
             white-space: normal;
             font-size: 12px;
             text-align: center;
+            position: relative;
+            padding-right: 18px;
+        }
+
+        .project-comment-flag {
+            position: absolute;
+            top: 50%;
+            right: 2px;
+            transform: translateY(-50%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--accent-amber-strong, #d7a44b);
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1;
+            flex-shrink: 0;
         }
 
         .project-indicator-container {
@@ -2592,6 +2613,81 @@
             flex-basis: 9%;
             min-width: 9%;
             max-width: 9%;
+        }
+
+        /* Раздел "завершенные": дополнительный столбец "Индикатор по дате" */
+        .projects-grid-header--done-with-indicator .grid-header:nth-child(1),
+        .projects-grid-row--done-with-indicator .grid-cell:nth-child(1) {
+            flex-basis: 8%;
+            min-width: 8%;
+            max-width: 8%;
+        }
+
+        .projects-grid-header--done-with-indicator .grid-header:nth-child(2),
+        .projects-grid-row--done-with-indicator .grid-cell:nth-child(2) {
+            flex-basis: 40%;
+            min-width: 40%;
+            max-width: 40%;
+        }
+
+        .projects-grid-header--done-with-indicator .grid-header:nth-child(3),
+        .projects-grid-row--done-with-indicator .grid-cell:nth-child(3),
+        .projects-grid-header--done-with-indicator .grid-header:nth-child(4),
+        .projects-grid-row--done-with-indicator .grid-cell:nth-child(4),
+        .projects-grid-header--done-with-indicator .grid-header:nth-child(5),
+        .projects-grid-row--done-with-indicator .grid-cell:nth-child(5),
+        .projects-grid-header--done-with-indicator .grid-header:nth-child(6),
+        .projects-grid-row--done-with-indicator .grid-cell:nth-child(6) {
+            flex-basis: 9%;
+            min-width: 9%;
+            max-width: 9%;
+        }
+
+        .projects-grid-header--done-with-indicator .grid-header:nth-child(7),
+        .projects-grid-row--done-with-indicator .grid-cell:nth-child(7),
+        .projects-grid-header--done-with-indicator .grid-header:nth-child(8),
+        .projects-grid-row--done-with-indicator .grid-cell:nth-child(8) {
+            flex-basis: 8%;
+            min-width: 8%;
+            max-width: 8%;
+        }
+
+        .projects-grid-header--done-with-indicator.projects-grid-header--with-management .grid-header:nth-child(1),
+        .projects-grid-row--done-with-indicator.projects-grid-row--with-management .grid-cell:nth-child(1) {
+            flex-basis: 18%;
+            min-width: 18%;
+            max-width: 18%;
+        }
+
+        .projects-grid-header--done-with-indicator.projects-grid-header--with-management .grid-header:nth-child(2),
+        .projects-grid-row--done-with-indicator.projects-grid-row--with-management .grid-cell:nth-child(2) {
+            flex-basis: 7%;
+            min-width: 7%;
+            max-width: 7%;
+        }
+
+        .projects-grid-header--done-with-indicator.projects-grid-header--with-management .grid-header:nth-child(3),
+        .projects-grid-row--done-with-indicator.projects-grid-row--with-management .grid-cell:nth-child(3) {
+            flex-basis: 27%;
+            min-width: 27%;
+            max-width: 27%;
+        }
+
+        .projects-grid-header--done-with-indicator.projects-grid-header--with-management .grid-header:nth-child(4),
+        .projects-grid-row--done-with-indicator.projects-grid-row--with-management .grid-cell:nth-child(4),
+        .projects-grid-header--done-with-indicator.projects-grid-header--with-management .grid-header:nth-child(5),
+        .projects-grid-row--done-with-indicator.projects-grid-row--with-management .grid-cell:nth-child(5),
+        .projects-grid-header--done-with-indicator.projects-grid-header--with-management .grid-header:nth-child(6),
+        .projects-grid-row--done-with-indicator.projects-grid-row--with-management .grid-cell:nth-child(6),
+        .projects-grid-header--done-with-indicator.projects-grid-header--with-management .grid-header:nth-child(7),
+        .projects-grid-row--done-with-indicator.projects-grid-row--with-management .grid-cell:nth-child(7),
+        .projects-grid-header--done-with-indicator.projects-grid-header--with-management .grid-header:nth-child(8),
+        .projects-grid-row--done-with-indicator.projects-grid-row--with-management .grid-cell:nth-child(8),
+        .projects-grid-header--done-with-indicator.projects-grid-header--with-management .grid-header:nth-child(9),
+        .projects-grid-row--done-with-indicator.projects-grid-row--with-management .grid-cell:nth-child(9) {
+            flex-basis: 8%;
+            min-width: 8%;
+            max-width: 8%;
         }
 
         .grid-header {
