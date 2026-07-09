@@ -3481,8 +3481,7 @@ if (lastMonthData) {
 	                                </div>
                             </div>
                             <div class="chart-right">
-                                <div class="chart-hours-heading-row">
-                                    <div class="chart-hours-heading-spacer" aria-hidden="true"></div>
+                                <div class="chart-hours-heading-row" id="${period.id}-hours-heading-row">
                                     <div class="chart-hours-heading">Загрузка в часах</div>
                                     <div id="${period.id}-overtime" class="chart-hours-overtime-badge" style="display: none;"></div>
                                 </div>
@@ -4302,13 +4301,16 @@ function createOrUpdateChart(periodId, percentage, loaded, total, idleHours, abs
             };
             const factLabel = factLabelByPeriod[periodId] || 'факт';
             const overtimeEl = document.getElementById(`${periodId}-overtime`);
+            const hoursHeadingRow = document.getElementById(`${periodId}-hours-heading-row`);
             if (overtimeEl) {
                 if (overtimeHours > 0) {
                     overtimeEl.textContent = `в т.ч. сверхурочно ${Math.round(overtimeHours).toLocaleString('ru-RU')} ч.`;
                     overtimeEl.style.display = '';
+                    if (hoursHeadingRow) hoursHeadingRow.classList.add('chart-hours-heading-row--with-overtime');
                 } else {
                     overtimeEl.textContent = '';
                     overtimeEl.style.display = 'none';
+                    if (hoursHeadingRow) hoursHeadingRow.classList.remove('chart-hours-heading-row--with-overtime');
                 }
             }
 

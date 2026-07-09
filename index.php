@@ -114,6 +114,21 @@ function asset($path) {
 
                         <!-- Блок ТАБЕЛЬ (справа) -->
                         <div class="report_card">
+			    <!-- Блок УВЕДОМЛЕНИЕ -->
+                            <section class="notification-section">
+                                <div class="target-indicator-block" id="target-indicator-block" style="display: none;">
+                                    <h3>Целевой показатель</h3>
+                                    <div class="target-indicator-content" id="target-indicator-content">
+                                        <!-- Целевой показатель будет рассчитан из Проекты_ТехБлок -->
+                                    </div>
+                                </div>
+                                <div class="notification-block" id="notification-block" style="display: none;">
+                                    <h3>Уведомление</h3>
+                                    <div class="notification-content" id="notification-content">
+                                        <!-- Текст уведомления будет загружен из Excel -->
+                                    </div>
+                                </div>
+                            </section>
                             <!-- Блок ТАБЕЛЬ -->
                             <div class="block-employees">
                                 <div class="block block--accent block--accent-timesheet" id="absences-block">
@@ -139,21 +154,6 @@ function asset($path) {
                                     </div>
                                 </div>
                             </div>
-			    <!-- Блок УВЕДОМЛЕНИЕ -->
-                            <section class="notification-section">
-                                <div class="notification-block" id="notification-block" style="display: none;">
-                                    <h3>Уведомление</h3>
-                                    <div class="notification-content" id="notification-content">
-                                        <!-- Текст уведомления будет загружен из Excel -->
-                                    </div>
-                                </div>
-                                <div class="target-indicator-block" id="target-indicator-block" style="display: none;">
-                                    <h3>Целевой показатель</h3>
-                                    <div class="target-indicator-content" id="target-indicator-content">
-                                        <!-- Целевой показатель будет рассчитан из Проекты_ТехБлок -->
-                                    </div>
-                                </div>
-                            </section>
                         </div>
                     </div>
                     <!-- Блок ПРОЕКТЫ (слева) -->
