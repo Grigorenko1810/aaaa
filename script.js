@@ -4654,7 +4654,9 @@ function renderProjectsOverdueFilter() {
         { value: 'all', label: 'Все сроки' },
         { value: 'date', label: 'Просрочка даты' },
         { value: 'hours', label: 'Просрочка часов' },
-        { value: 'date-hours', label: 'Дата или часы' }
+        { value: 'date-hours', label: 'Дата или часы' },
+        { value: 'no-date', label: 'Без даты завершения' },
+        { value: 'no-hours', label: 'Без плановых часов' }
     ];
 
     return `
@@ -5321,6 +5323,8 @@ function filterProjectTableByOverdue(projects, filter) {
         if (filter === 'date') return hasDateOverdue;
         if (filter === 'hours') return hasHoursOverdue;
         if (filter === 'date-hours') return hasDateOverdue || hasHoursOverdue;
+        if (filter === 'no-date') return isProjectTableMissingPlanDate(project);
+        if (filter === 'no-hours') return isProjectTableMissingPlanHours(project);
         return true;
     });
 }
@@ -5333,6 +5337,14 @@ function isProjectTableDateOverdue(project) {
 
 function isProjectTableHoursOverdue(project) {
     return Boolean(project) && project.hoursColor === INDICATOR_COLORS.RED;
+}
+
+function isProjectTableMissingPlanDate(project) {
+    return !project || !(project.planDate instanceof Date) || isNaN(project.planDate.getTime());
+}
+
+function isProjectTableMissingPlanHours(project) {
+    return Boolean(project) && !(Number(project.planHours) > 0);
 }
 
 function getOrderedProjectTableStatuses(projects) {
