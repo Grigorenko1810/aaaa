@@ -2710,6 +2710,7 @@ function getTargetIndicatorProjectRecords() {
                 hasArchivedStatus: false,
                 factStart: null,
                 factEnd: null,
+                comment: '',
                 sourceIndex: index
             });
         }
@@ -2729,6 +2730,10 @@ function getTargetIndicatorProjectRecords() {
         }
         if (isTargetIndicatorArchivedStatusValue(getRowValue(row, ['Статус']))) {
             project.hasArchivedStatus = true;
+        }
+        const rowComment = getCleanTextValue(getRowValue(row, ['Комментарий']));
+        if (rowComment) {
+            project.comment = project.comment ? `${project.comment}\n${rowComment}` : rowComment;
         }
 
         project.planEnd = getLaterDate(project.planEnd, parseDateValue(getRowValue(row, [
@@ -2922,6 +2927,7 @@ function renderTargetIndicatorContent(data) {
             ${periodToggleHtml}
             <p class="target-indicator-subtitle">${escapeHtml(periodLabel)}: нет завершенных коммерческих и инвестиционных задач для выбранного среза. Для ЛОИ вместо статуса КД используется статус проекта «Завершена».</p>
             ${renderTargetIndicatorTaskIds(taskIds, data.mode)}
+            ${renderTargetIndicatorTaskComments(taskIds, data.mode)}
         `;
     }
 
@@ -2945,6 +2951,7 @@ function renderTargetIndicatorContent(data) {
                 ${rowsHtml}
             </div>
             ${renderTargetIndicatorTaskIds(taskIds, data.mode)}
+            ${renderTargetIndicatorTaskComments(taskIds, data.mode)}
         `;
     }
 
@@ -2971,6 +2978,7 @@ function renderTargetIndicatorContent(data) {
             })}
         </div>
         ${renderTargetIndicatorTaskIds(taskIds, data.mode)}
+        ${renderTargetIndicatorTaskComments(taskIds, data.mode)}
     `;
 }
 
@@ -3073,6 +3081,73 @@ function renderTargetIndicatorTaskIds(projects, mode) {
             <summary class="target-indicator-task-ids__title">ID задач в расчете <span>${escapeHtml(String(projects.length))}</span></summary>
             <div class="target-indicator-task-ids__chips">
                 ${projects.map(project => `<span class="target-indicator-task-id">${escapeHtml(project.id)}</span>`).join('')}
+            </div>
+        </details>
+    `;
+}
+
+function getTargetIndicatorCommentRows(projects) {
+    return (projects || []).filter(project => getCleanTextValue(project?.comment));
+}
+
+function renderTargetIndicatorCommentRow(project) {
+    return `
+        <div class="target-indicator-comment-row">
+            <span class="target-indicator-comment-row__id">${escapeHtml(project.id)}</span>
+            <span class="target-indicator-comment-row__text">${escapeHtml(project.comment)}</span>
+        </div>
+    `;
+}
+
+function renderTargetIndicatorTaskComments(projects, mode) {
+    const commentRows = getTargetIndicatorCommentRows(projects);
+
+    if (commentRows.length === 0) {
+        return `
+            <details class="target-indicator-task-ids target-indicator-comments">
+                <summary class="target-indicator-task-ids__title">Комментарии <span>0</span></summary>
+                <div class="target-indicator-task-ids__empty">Нет комментариев</div>
+            </details>
+        `;
+    }
+
+    if (mode === 'all') {
+        const byCenter = new Map();
+        commentRows.forEach(project => {
+            const group = getTargetIndicatorDisplayGroup(project.center);
+            if (!group) return;
+            if (!byCenter.has(group.key)) {
+                byCenter.set(group.key, {
+                    center: group.key,
+                    centerName: group.label,
+                    projects: []
+                });
+            }
+            byCenter.get(group.key).projects.push(project);
+        });
+
+        const rows = getOrderedTargetIndicatorRows(Array.from(byCenter.values())).map(row => `
+            <div class="target-indicator-task-ids__group">
+                <div class="target-indicator-task-ids__group-title">${escapeHtml(row.centerName || row.center)} <span>${escapeHtml(String(row.projects.length))}</span></div>
+                <div class="target-indicator-comments__list">
+                    ${row.projects.map(renderTargetIndicatorCommentRow).join('')}
+                </div>
+            </div>
+        `).join('');
+
+        return `
+            <details class="target-indicator-task-ids target-indicator-comments">
+                <summary class="target-indicator-task-ids__title">Комментарии <span>${escapeHtml(String(commentRows.length))}</span></summary>
+                ${rows}
+            </details>
+        `;
+    }
+
+    return `
+        <details class="target-indicator-task-ids target-indicator-comments">
+            <summary class="target-indicator-task-ids__title">Комментарии <span>${escapeHtml(String(commentRows.length))}</span></summary>
+            <div class="target-indicator-comments__list">
+                ${commentRows.map(renderTargetIndicatorCommentRow).join('')}
             </div>
         </details>
     `;
