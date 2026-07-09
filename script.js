@@ -2927,7 +2927,7 @@ function renderTargetIndicatorContent(data) {
             ${periodToggleHtml}
             <p class="target-indicator-subtitle">${escapeHtml(periodLabel)}: нет завершенных коммерческих и инвестиционных задач для выбранного среза. Для ЛОИ вместо статуса КД используется статус проекта «Завершена».</p>
             ${renderTargetIndicatorTaskIds(taskIds, data.mode)}
-            ${renderTargetIndicatorTaskComments(taskIds, data.mode)}
+            ${renderTargetIndicatorTaskComments(getTargetIndicatorCommentTaskRows(data.mode), data.mode)}
         `;
     }
 
@@ -2951,7 +2951,7 @@ function renderTargetIndicatorContent(data) {
                 ${rowsHtml}
             </div>
             ${renderTargetIndicatorTaskIds(taskIds, data.mode)}
-            ${renderTargetIndicatorTaskComments(taskIds, data.mode)}
+            ${renderTargetIndicatorTaskComments(getTargetIndicatorCommentTaskRows(data.mode), data.mode)}
         `;
     }
 
@@ -2978,7 +2978,7 @@ function renderTargetIndicatorContent(data) {
             })}
         </div>
         ${renderTargetIndicatorTaskIds(taskIds, data.mode)}
-        ${renderTargetIndicatorTaskComments(taskIds, data.mode)}
+        ${renderTargetIndicatorTaskComments(getTargetIndicatorCommentTaskRows(data.mode), data.mode)}
     `;
 }
 
@@ -3019,6 +3019,26 @@ function getTargetIndicatorTaskIdRows(periodKey, mode) {
 
     return getTargetIndicatorProjectRecords()
         .filter(project => isTargetIndicatorProjectCompletedInPeriod(project, period))
+        .filter(project => {
+            if (mode === 'all') return Boolean(getTargetIndicatorDisplayGroup(project.center));
+            return !currentCenter || project.center === currentCenter;
+        })
+        .sort((a, b) => {
+            const centerOrder = getOrderedTargetIndicatorRows([
+                { center: a.center, centerName: getProjectStageFullLabel(a.center) },
+                { center: b.center, centerName: getProjectStageFullLabel(b.center) }
+            ]);
+            if (centerOrder[0]?.center !== centerOrder[1]?.center && centerOrder[0]?.center === b.center) return 1;
+            if (centerOrder[0]?.center !== centerOrder[1]?.center && centerOrder[0]?.center === a.center) return -1;
+            return String(a.id).localeCompare(String(b.id), 'ru', { numeric: true });
+        });
+}
+
+function getTargetIndicatorCommentTaskRows(mode) {
+    const currentCenter = normalizeProjectCenterLabel(currentSheet);
+
+    return getTargetIndicatorProjectRecords()
+        .filter(project => getCleanTextValue(project.comment))
         .filter(project => {
             if (mode === 'all') return Boolean(getTargetIndicatorDisplayGroup(project.center));
             return !currentCenter || project.center === currentCenter;
