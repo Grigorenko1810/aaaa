@@ -2707,6 +2707,7 @@ function getTargetIndicatorProjectRecords() {
                 actualHours: 0,
                 hasPlanHours: false,
                 hasReadyKd: false,
+                hasArchivedStatus: false,
                 factStart: null,
                 factEnd: null,
                 sourceIndex: index
@@ -2725,6 +2726,9 @@ function getTargetIndicatorProjectRecords() {
             'Столбец 17'
         ]))) {
             project.hasReadyKd = true;
+        }
+        if (isTargetIndicatorArchivedStatusValue(getRowValue(row, ['Статус']))) {
+            project.hasArchivedStatus = true;
         }
 
         project.planEnd = getLaterDate(project.planEnd, parseDateValue(getRowValue(row, [
@@ -2819,7 +2823,7 @@ function isTargetIndicatorProjectCompletedInYear(project, year) {
 
 function isTargetIndicatorProjectCompletedInPeriod(project, period) {
     return isTargetIndicatorProjectStartedInPeriod(project, period)
-        && isTargetIndicatorProjectCompleted(project.statuses)
+        && isTargetIndicatorProjectCompletedStatus(project)
         && isDateInTargetIndicatorPeriod(project.factEnd, period);
 }
 
@@ -2879,7 +2883,7 @@ function isTargetIndicatorProjectEligibleByKdOrStatus(project) {
         return isTargetIndicatorProjectCompleted(project.statuses);
     }
 
-    return project.hasReadyKd === true;
+    return project.hasReadyKd === true || project.hasArchivedStatus === true;
 }
 
 function isTargetIndicatorProjectCompleted(statuses) {
@@ -2887,6 +2891,16 @@ function isTargetIndicatorProjectCompleted(statuses) {
 
     return normalizedStatuses.length > 0
         && normalizedStatuses.every(status => status.type === 'done');
+}
+
+function isTargetIndicatorArchivedStatusValue(value) {
+    return normalizeLookupText(value) === 'архив';
+}
+
+function isTargetIndicatorProjectCompletedStatus(project) {
+    if (!project) return false;
+    if (isTargetIndicatorProjectCompleted(project.statuses)) return true;
+    return !TARGET_INDICATOR_NO_KD_CENTERS.has(project.center) && project.hasArchivedStatus === true;
 }
 
 function isTargetIndicatorProjectTypeIncluded(projectTypes) {
@@ -2926,7 +2940,7 @@ function renderTargetIndicatorContent(data) {
 
         return `
             ${periodToggleHtml}
-            <p class="target-indicator-subtitle">${escapeHtml(periodLabel)}: Центры КБ считаются суммарно без ЛОИ и УВП, ЛОИ считается отдельно. Для ЛОИ вместо статуса КД используется статус проекта «Завершена». Доля в срок и по часам считается от завершенных задач выбранного полугодия.</p>
+            <p class="target-indicator-subtitle">${escapeHtml(periodLabel)}: Центры КБ считаются суммарно без ЛОИ и УВП (учитывается статус КД «Готово» или статус проекта «Архив»), ЛОИ считается отдельно. Для ЛОИ вместо статуса КД используется статус проекта «Завершена». Доля в срок и по часам считается от завершенных задач выбранного полугодия.</p>
             <div class="target-indicator-groups">
                 ${rowsHtml}
             </div>
@@ -2939,7 +2953,7 @@ function renderTargetIndicatorContent(data) {
 
     return `
         ${periodToggleHtml}
-        <p class="target-indicator-subtitle">${escapeHtml(periodLabel)}: коммерческие и инвестиционные проекты центра со статусом КД «Готово»; для ЛОИ вместо статуса КД используется статус проекта «Завершена».</p>
+        <p class="target-indicator-subtitle">${escapeHtml(periodLabel)}: коммерческие и инвестиционные проекты центра со статусом КД «Готово» или статусом проекта «Архив»; для ЛОИ вместо статуса КД используется статус проекта «Завершена».</p>
         <div class="target-indicator-summary">
             <div>
                 <span class="target-indicator-summary__label">Начато</span>
@@ -3196,6 +3210,13 @@ function addTodayAbsenceEmployee(employeeMaps, statusKey, employeeName, rowIndex
     }
 }
 
+const TODAY_ABSENCE_KNOWN_CENTERS = new Set(['ЦНГО', 'ЦДЦМ', 'ЦДПМ', 'ЦОТ', 'УВП', 'ЛОИ']);
+
+function getTodayAbsenceCenterFilter() {
+    const normalized = normalizeProjectCenterLabel(currentSheet);
+    return TODAY_ABSENCE_KNOWN_CENTERS.has(normalized) ? normalized : '';
+}
+
 function getTodayAbsenceDataFromTechBlockLoad() {
     const referenceDate = getTodayCalendarDate();
     const context = getWorksheetHeaderContext('Загрузка_ТехБлок');
@@ -3204,6 +3225,8 @@ function getTodayAbsenceDataFromTechBlockLoad() {
         return emptyTodayAbsenceData(referenceDate);
     }
 
+    const centerFilter = getTodayAbsenceCenterFilter();
+    const employeeLookup = getTechBlockEmployeeLookup();
     const employeeMaps = createTodayAbsenceEmployeeMaps();
 
     for (let rowIndex = context.range.s.r + 1; rowIndex <= context.range.e.r; rowIndex++) {
@@ -3213,6 +3236,18 @@ function getTodayAbsenceDataFromTechBlockLoad() {
         const rowDate = parseDateValue(getWorksheetCellByColumnLetter(context, rowIndex, 'B'));
         if (!isSameCalendarDate(rowDate, referenceDate)) continue;
 
+        const employeeName = getWorksheetContextValue(context, rowIndex, [
+            'ФИО',
+            'Сотрудник',
+            'ФИО сотрудника'
+        ]);
+
+        if (centerFilter) {
+            const employee = employeeLookup.get(normalizePersonName(getCleanTextValue(employeeName)));
+            const rowCenter = normalizeProjectCenterLabel(getWorksheetContextValue(context, rowIndex, ['Центр'])) || employee?.center || '';
+            if (rowCenter !== centerFilter) continue;
+        }
+
         let rawAbsence = getWorksheetContextValue(context, rowIndex, ['Отсутствия']);
         if (!isValid(rawAbsence)) {
             rawAbsence = getWorksheetCellByColumnLetter(context, rowIndex, 'M');
@@ -3220,12 +3255,6 @@ function getTodayAbsenceDataFromTechBlockLoad() {
 
         const statusKey = TODAY_ABSENCE_STATUS_MAP[normalizeAbsenceCode(rawAbsence)];
         if (!statusKey) continue;
-
-        const employeeName = getWorksheetContextValue(context, rowIndex, [
-            'ФИО',
-            'Сотрудник',
-            'ФИО сотрудника'
-        ]);
 
         addTodayAbsenceEmployee(employeeMaps, statusKey, employeeName, rowIndex);
     }
