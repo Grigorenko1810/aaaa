@@ -41,6 +41,7 @@ const TODAY_ABSENCE_STATUS_MAP = {
     'обс': 'unpaidVacation',
     'ог': 'dayOff',
     'д': 'maternityLeave',
+    'р': 'maternityLeave',
     'декрет': 'maternityLeave'
 };
 const TODAY_ABSENCE_LABELS = {
