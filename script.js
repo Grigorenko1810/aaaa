@@ -5050,7 +5050,8 @@ function getProjectsFromTechBlockForCenter(centerKey, options = {}) {
                 actualHours: 0,
                 factStart: null,
                 factEnd: null,
-                hasComment: false
+                hasComment: false,
+                comment: ''
             });
         }
 
@@ -5058,12 +5059,16 @@ function getProjectsFromTechBlockForCenter(centerKey, options = {}) {
         const name = getCleanTextValue(getRowValue(row, ['Наименование проекта', 'Проект']));
         const planHours = parseNumericValue(getRowValue(row, ['Количество ПЛАНовых часов', 'Плановые часы']));
         const actualHours = parseNumericValue(getRowValue(row, ['Количество ФАКТических часов', 'Фактические часы']));
+        const rowComment = getCleanTextValue(getRowValue(row, ['Комментарий']));
 
         if (!project.name && name) project.name = name;
         if (center) project.centers.add(center);
         if (management) project.managements.add(management);
         if (!project.type && projectType) project.type = projectType;
-        if (getCleanTextValue(getRowValue(row, ['Комментарий']))) project.hasComment = true;
+        if (rowComment) {
+            project.hasComment = true;
+            project.comment = project.comment ? `${project.comment}\n${rowComment}` : rowComment;
+        }
         project.statuses.push(status);
         project.planDate = getLaterDate(project.planDate, parseDateValue(getRowValue(row, [
             'План дата завершения этапа по графику проекта',
@@ -5126,7 +5131,8 @@ function getProjectsFromTechBlockForCenter(centerKey, options = {}) {
             actualHours: project.actualHours,
             remainingHours,
             hoursColor: getProjectTableHoursColor(remainingHours),
-            hasComment: project.hasComment === true
+            hasComment: project.hasComment === true,
+            comment: project.comment || ''
         };
     }).filter(project => PROJECT_TABLE_ALLOWED_STATUSES.has(project.status)).sort((a, b) => {
         if (includeAllCenters) {
@@ -5285,7 +5291,8 @@ function aggregateProjectDetailRowsByTask(projects) {
                 factEnd: project.factEnd || null,
                 planHours: 0,
                 actualHours: 0,
-                hasComment: false
+                hasComment: false,
+                comment: ''
             });
         }
 
@@ -5296,6 +5303,9 @@ function aggregateProjectDetailRowsByTask(projects) {
         if (!current.status && project.status) current.status = project.status;
         if (!current.statusType && project.statusType) current.statusType = project.statusType;
         if (project.hasComment) current.hasComment = true;
+        if (project.comment) {
+            current.comment = current.comment ? `${current.comment}\n${project.comment}` : project.comment;
+        }
 
         (Array.isArray(project.centers) ? project.centers : [project.center]).filter(Boolean).forEach(center => current.centers.add(center));
         (Array.isArray(project.managements) ? project.managements : [project.management]).filter(Boolean).forEach(management => current.managements.add(management));
@@ -5340,7 +5350,8 @@ function aggregateProjectDetailRowsByTask(projects) {
             actualHours: project.actualHours,
             remainingHours,
             hoursColor: getProjectTableHoursColor(remainingHours),
-            hasComment: project.hasComment === true
+            hasComment: project.hasComment === true,
+            comment: project.comment || ''
         };
     }).sort((a, b) => String(a.id).localeCompare(String(b.id), 'ru', { numeric: true }));
 }
@@ -5445,6 +5456,66 @@ function shouldGroupProjectDetailsByManagement() {
     const center = normalizeProjectCenterLabel(currentSheet);
     return center !== 'ЦОТ' && center !== 'ЦДПМ';
 }
+
+function ensureProjectCommentPopover() {
+    let popover = document.getElementById('project-comment-popover');
+    if (!popover) {
+        document.body.insertAdjacentHTML('beforeend', '<div id="project-comment-popover" class="project-comment-popover" hidden></div>');
+        popover = document.getElementById('project-comment-popover');
+    }
+    return popover;
+}
+
+let projectCommentPopoverAnchor = null;
+
+function openProjectCommentPopover(anchorEl, commentText) {
+    const popover = ensureProjectCommentPopover();
+
+    if (!popover.hidden && projectCommentPopoverAnchor === anchorEl) {
+        closeProjectCommentPopover();
+        return;
+    }
+
+    popover.innerHTML = `
+        <div class="project-comment-popover__header">
+            <span class="project-comment-popover__title">Комментарий</span>
+            <button type="button" class="project-comment-popover__close" aria-label="Закрыть">✖</button>
+        </div>
+        <div class="project-comment-popover__text">${escapeHtml(commentText)}</div>
+    `;
+
+    projectCommentPopoverAnchor = anchorEl;
+    positionPopover(popover, anchorEl);
+    popover.hidden = false;
+
+    popover.querySelector('.project-comment-popover__close').addEventListener('click', closeProjectCommentPopover);
+}
+
+function closeProjectCommentPopover() {
+    const popover = document.getElementById('project-comment-popover');
+    if (popover) {
+        popover.hidden = true;
+        popover.innerHTML = '';
+    }
+    projectCommentPopoverAnchor = null;
+}
+
+document.addEventListener('click', (e) => {
+    const flag = e.target.closest('.project-comment-flag');
+    if (flag) {
+        e.stopPropagation();
+        openProjectCommentPopover(flag, flag.dataset.comment || '');
+        return;
+    }
+
+    const popover = document.getElementById('project-comment-popover');
+    if (!popover || popover.hidden) return;
+    if (popover.contains(e.target)) return;
+    closeProjectCommentPopover();
+});
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeProjectCommentPopover();
+});
 
 function renderProjectDetails(projects, status, type) {
     if (!projects || projects.length === 0) {
@@ -5585,7 +5656,7 @@ function renderProjectDetails(projects, status, type) {
                 ? `<span class="project-value-badge project-value-badge--${escapeHtml(getProjectTableBadgeTone(project.doneDateColor))}">${escapeHtml(project.doneDateIndicator) || '-'}</span>`
                 : '-';
             const commentFlagHtml = project.hasComment
-                ? '<span class="project-comment-flag" title="Есть комментарий в Проекты_ТехБлок" aria-hidden="true">!</span>'
+                ? `<button type="button" class="project-comment-flag" data-comment="${escapeHtml(project.comment)}" title="Показать комментарий" aria-label="Показать комментарий">!</button>`
                 : '';
             
             html += `

@@ -1478,12 +1478,73 @@
             width: 15px;
             height: 15px;
             border-radius: 50%;
+            border: none;
+            padding: 0;
+            margin: 0;
+            cursor: pointer;
             background: var(--accent-amber-strong, #d7a44b);
             color: #ffffff;
             font-size: 10px;
             font-weight: 700;
             line-height: 1;
             flex-shrink: 0;
+        }
+
+        .project-comment-flag:hover,
+        .project-comment-flag:focus-visible {
+            background: color-mix(in srgb, var(--accent-amber-strong, #d7a44b) 82%, black);
+            outline: none;
+        }
+
+        .project-comment-popover {
+            position: absolute;
+            z-index: 1050;
+            width: max-content;
+            min-width: 220px;
+            max-width: min(360px, 92vw);
+            background: #fff;
+            border: 1px solid var(--accent-amber-border);
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+            overflow: hidden;
+        }
+        .project-comment-popover[hidden] { display: none; }
+
+        .project-comment-popover__header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 10px;
+            background: var(--accent-amber-soft);
+            border-bottom: 1px solid var(--accent-amber-border);
+        }
+        .project-comment-popover__title {
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--accent-amber-text, #7a5415);
+            line-height: 1.3;
+        }
+        .project-comment-popover__close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #64748b;
+            font-size: 12px;
+            padding: 2px 4px;
+            line-height: 1;
+        }
+        .project-comment-popover__close:hover { color: #0f172a; }
+
+        .project-comment-popover__text {
+            padding: 10px 12px;
+            font-size: 12px;
+            line-height: 1.45;
+            color: #1e293b;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 220px;
+            overflow-y: auto;
         }
 
         .project-indicator-container {
